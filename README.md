@@ -73,6 +73,23 @@ make run
 
 O runtime opera em dois estágios principais para garantir a isolação completa:
 
+```mermaid
+graph TD
+    A[User: gocontainer run rootfs /bin/sh] --> B[Stage 1: Parent Process]
+    B --> C{Create Isolation}
+    C -->|Namespaces| D[UTS, PID, Mount, Net]
+    C -->|Cgroups| E[Memory 100MB, CPU 512]
+    C -->|Networking| F[Veth Pair Setup]
+    
+    B --> G[Re-exec: /proc/self/exe child]
+    
+    G --> H[Stage 2: Child Process]
+    H --> I[Set Hostname: gocontainer]
+    H --> J[Chroot to rootfs]
+    H --> K[Mount /proc]
+    H --> L[Exec: /bin/sh]
+```
+
 1. **Stage 1 (Parent)**: Cria novos namespaces (UTS, PID, NS, NET), gera os cgroups de memória/CPU e re-executa o próprio binário chamando o comando interno `child`.
 2. **Stage 2 (Child)**: Já dentro dos namespaces, define o hostname (`gocontainer`), realiza o `chroot` para o rootfs, monta `/proc` e executa o comando final do usuário.
 
