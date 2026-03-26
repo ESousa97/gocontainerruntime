@@ -75,19 +75,30 @@ O runtime opera em dois estágios principais para garantir a isolação completa
 
 ```mermaid
 graph TD
-    A[User: gocontainer run rootfs /bin/sh] --> B[Stage 1: Parent Process]
-    B --> C{Create Isolation}
-    C -->|Namespaces| D[UTS, PID, Mount, Net]
-    C -->|Cgroups| E[Memory 100MB, CPU 512]
-    C -->|Networking| F[Veth Pair Setup]
-    
-    B --> G[Re-exec: /proc/self/exe child]
-    
-    G --> H[Stage 2: Child Process]
-    H --> I[Set Hostname: gocontainer]
-    H --> J[Chroot to rootfs]
-    H --> K[Mount /proc]
-    H --> L[Exec: /bin/sh]
+    Start([User: gocontainer run]) --> Parent[Stage 1: Parent Process]
+
+    subgraph "Isolamento (Host Side)"
+        direction TB
+        NS[Namespaces: UTS, PID, NS, NET]
+        CG[Cgroups: Memória & CPU]
+        Veth[Networking: Setup Veth Pair]
+    end
+
+    Parent --> Isolation
+    Isolation --> Reexec[Re-exec: /proc/self/exe child]
+    Reexec --> Child[Stage 2: Child Process]
+
+    subgraph "Ambiente (Container Side)"
+        direction TB
+        Host[Set Hostname: gocontainer]
+        Root[Chroot to Alpine rootfs]
+        Mount[Mount /proc filesystem]
+    end
+
+    Child --> Container
+    Container --> Final[/Exec: User Command/]
+
+    style Final fill:#2da44e,stroke:#fff,stroke-width:2px,color:#fff
 ```
 
 1. **Stage 1 (Parent)**: Cria novos namespaces (UTS, PID, NS, NET), gera os cgroups de memória/CPU e re-executa o próprio binário chamando o comando interno `child`.
