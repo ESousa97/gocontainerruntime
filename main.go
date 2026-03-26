@@ -31,9 +31,9 @@ func run() {
 	// Re-execute itself with 'child' as the first argument, passing rootfs and command
 	cmd := exec.Command("/proc/self/exe", append([]string{"child"}, os.Args[2:]...)...)
 
-	// Configure namespaces: PID, UTS (hostname), Mount (filesystem)
+	// Configure namespaces: PID, UTS (hostname), Mount (filesystem), Network
 	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID | syscall.CLONE_NEWNS,
+		Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID | syscall.CLONE_NEWNS | syscall.CLONE_NEWNET,
 	}
 
 	cmd.Stdin = os.Stdin
@@ -49,7 +49,7 @@ func run() {
 	must(os.MkdirAll(memCg, 0755))
 	must(os.MkdirAll(cpuCg, 0755))
 
-	// Ensure cleanup
+	// Ensure cgroup cleanup
 	defer func() {
 		os.Remove(memCg)
 		os.Remove(cpuCg)
@@ -64,6 +64,32 @@ func run() {
 		fmt.Printf("Error starting child process: %v\n", err)
 		os.Exit(1)
 	}
+
+	// Network Setup
+	pid := cmd.Process.Pid
+	fmt.Printf("Setting up network for PID %d\n", pid)
+
+	// 1. Create veth pair
+	must(exec.Command("ip", "link", "add", "veth-host", "type", "veth", "peer", "name", "veth-child").Run())
+	
+	// 2. Move veth-child to the container's network namespace
+	must(exec.Command("ip", "link", "set", "veth-child", "netns", fmt.Sprintf("%d", pid)).Run())
+
+	// 3. Configure the host side
+	must(exec.Command("ip", "addr", "add", "10.0.0.1/24", "dev", "veth-host").Run())
+	must(exec.Command("ip", "link", "set", "veth-host", "up").Run())
+
+	// 4. Configure the child side (inside the namespace)
+	// We use 'nsenter' to run commands inside the child's network namespace
+	nsenter := []string{"nsenter", "-t", fmt.Sprintf("%d", pid), "-n"}
+	must(exec.Command(nsenter[0], append(nsenter[1:], "ip", "addr", "add", "10.0.0.2/24", "dev", "veth-child")...).Run())
+	must(exec.Command(nsenter[0], append(nsenter[1:], "ip", "link", "set", "veth-child", "up")...).Run())
+	must(exec.Command(nsenter[0], append(nsenter[1:], "ip", "link", "set", "lo", "up")...).Run())
+
+	// Ensure network cleanup on exit
+	defer func() {
+		exec.Command("ip", "link", "delete", "veth-host").Run()
+	}()
 
 	// Write the child process PID to cgroup.procs
 	pidStr := []byte(fmt.Sprintf("%d", cmd.Process.Pid))
