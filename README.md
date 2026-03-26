@@ -73,33 +73,28 @@ make run
 
 O runtime opera em dois estágios principais para garantir a isolação completa:
 
+<div align="center">
+
 ```mermaid
 graph TD
     Start([User: gocontainer run]) --> Parent[Stage 1: Parent Process]
+    
+    Parent --> NS[Namespaces Isolation]
+    NS --> CG[Cgroups Resource Control]
+    CG --> Net[Network Setup]
+    
+    Net --> Child[Stage 2: Child Process]
+    
+    Child --> Host[Set Hostname]
+    Host --> Chroot[Chroot Isolation]
+    Chroot --> Mount[Mount /proc]
+    
+    Mount --> Final[/Exec: User Command/]
 
-    subgraph "Isolamento (Host Side)"
-        direction TB
-        NS[Namespaces: UTS, PID, NS, NET]
-        CG[Cgroups: Memória & CPU]
-        Veth[Networking: Setup Veth Pair]
-    end
-
-    Parent --> Isolation
-    Isolation --> Reexec[Re-exec: /proc/self/exe child]
-    Reexec --> Child[Stage 2: Child Process]
-
-    subgraph "Ambiente (Container Side)"
-        direction TB
-        Host[Set Hostname: gocontainer]
-        Root[Chroot to Alpine rootfs]
-        Mount[Mount /proc filesystem]
-    end
-
-    Child --> Container
-    Container --> Final[/Exec: User Command/]
-
-    style Final fill:#2da44e,stroke:#fff,stroke-width:2px,color:#fff
+    style Final fill:#2da44e,stroke:#fff,stroke-width:1px,color:#fff
 ```
+
+</div>
 
 1. **Stage 1 (Parent)**: Cria novos namespaces (UTS, PID, NS, NET), gera os cgroups de memória/CPU e re-executa o próprio binário chamando o comando interno `child`.
 2. **Stage 2 (Child)**: Já dentro dos namespaces, define o hostname (`gocontainer`), realiza o `chroot` para o rootfs, monta `/proc` e executa o comando final do usuário.
