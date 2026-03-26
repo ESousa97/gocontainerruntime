@@ -13,65 +13,65 @@
 
 `gocontainerruntime` is a lightweight, educational container runtime that demonstrates how modern containers work under the hood. It implements process isolation using Linux Namespaces, resource control via Cgroups, and filesystem isolation using Chroot.
 
-## Demonstração
+## Demonstration
 
 ```bash
-# Baixar rootfs do Alpine
+# Pull Alpine rootfs
 sudo ./gocontainer pull
 
-# Rodar um shell isolado (Requires sudo for namespaces/cgroups)
+# Run an isolated shell (Requires sudo for namespaces/cgroups)
 sudo ./gocontainer run /bin/sh
 ```
 
-## Stack Tecnológico
+## Technology Stack
 
-| Tecnologia | Papel |
+| Technology | Role |
 |---|---|
-| Go 1.25.0 | Linguagem principal e chamadas de sistema |
+| Go 1.25.0 | Core language and syscalls |
 | Linux Syscalls | Namespaces (CLONE_NEWNS, CLONE_NEWUTS, CLONE_NEWPID, CLONE_NEWNET) |
-| Cgroups v1 | Limite de memória (100MB) e CPU (512 shares) |
+| Cgroups v1 | Resource limits (100MB Memory, 512 CPU shares) |
 | Cobra | CLI Framework |
-| Alpine Linux | Rootfs leve para o container |
+| Alpine Linux | Lightweight rootfs for the container |
 
-## Pré-requisitos
+## Prerequisites
 
 - Go >= 1.22
-- Linux Kernel >= 4.x (com suporte a namespaces e cgroups v1)
-- Privilégios de Root (necessário para manipulação de namespaces e redes)
+- Linux Kernel >= 4.x (with support for namespaces and cgroups v1)
+- Root Privileges (required for namespace and network manipulation)
 
-## Instalação e Uso
+## Installation and Usage
 
-### Como binário
+### As a binary
 
 ```bash
 go install github.com/ESousa97/gocontainerruntime@latest
 ```
 
-### A partir do source
+### From source
 
 ```bash
 git clone https://github.com/ESousa97/gocontainerruntime.git
 cd gocontainerruntime
 make build
-# Opcional: Baixar rootfs padrão
+# Optional: Pull default rootfs
 make pull
-# Rodar shell
+# Run shell
 make run
 ```
 
 ## Makefile Targets
 
-| Target | Descrição |
+| Target | Description |
 |---|---|
-| `build` | Compila o binário `gocontainer` |
-| `clean` | Remove binário e arquivos de cache |
-| `test` | Executa a suíte de testes unitários |
-| `pull` | Faz o download e extração do minirootfs do Alpine Linux |
-| `run` | Inicia um container interativo com `/bin/sh` (requer sudo) |
+| `build` | Compiles the `gocontainer` binary |
+| `clean` | Removes binary and cache files |
+| `test` | Executes the unit test suite |
+| `pull` | Downloads and extracts the Alpine Linux minirootfs |
+| `run` | Starts an interactive container with `/bin/sh` (requires sudo) |
 
-## Arquitetura
+## Architecture
 
-O runtime opera em dois estágios principais para garantir a isolação completa:
+The runtime operates in two main stages to ensure complete isolation:
 
 <div align="center">
 
@@ -96,40 +96,40 @@ graph TD
 
 </div>
 
-1. **Stage 1 (Parent)**: Cria novos namespaces (UTS, PID, NS, NET), gera os cgroups de memória/CPU e re-executa o próprio binário chamando o comando interno `child`.
-2. **Stage 2 (Child)**: Já dentro dos namespaces, define o hostname (`gocontainer`), realiza o `chroot` para o rootfs, monta `/proc` e executa o comando final do usuário.
+1. **Stage 1 (Parent)**: Creates new namespaces (UTS, PID, NS, NET), generates memory/CPU cgroups, and re-executes itself by calling the internal `child` command.
+2. **Stage 2 (Child)**: Already inside the namespaces, sets the hostname (`gocontainer`), performs the `chroot` to the rootfs, mounts `/proc`, and executes the user's final command.
 
-Veja mais detalhes em [docs/architecture.md](docs/architecture.md).
+See more details in [docs/architecture.md](docs/architecture.md).
 
 ## API Reference
 
-A documentação detalhada das funções internas e pacotes está disponível em:
+Detailed documentation for internal functions and packages is available at:
 [pkg.go.dev/github.com/ESousa97/gocontainerruntime](https://pkg.go.dev/github.com/ESousa97/gocontainerruntime)
 
-## Configuração
+## Configuration
 
-| Variável | Descrição | Tipo | Padrão |
+| Variable | Description | Type | Default |
 |---|---|---|---|
-| `cacheDir` | Diretório para extração do rootfs | String | `./cache/alpine_rootfs` |
-| `alpineURL` | URL de download do Alpine | String | Alpine 3.19.1 Minirootfs |
+| `cacheDir` | Directory for rootfs extraction | String | `./cache/alpine_rootfs` |
+| `alpineURL` | Alpine download URL | String | Alpine 3.19.1 Minirootfs |
 
-## Roadmap de Estudo (Finalizado)
+## Roadmap (Finished)
 
-- [x] **Fase 1: O Fork Isolado (Namespaces)**: Criação de namespaces PID, UTS e Mount com re-exec.
-- [x] **Fase 2: Isolação de Arquivos (Chroot)**: Isolação da raiz do sistema e montagem do `/proc`.
-- [x] **Fase 3: Controle de Recursos (Cgroups)**: Limitação de memória (100MB) e CPU (shares).
-- [x] **Fase 4: Networking Básico (Netns)**: Configuração de veth pairs e IPs estáticos.
-- [x] **Fase 5: Interface Profissional e Imagens**: CLI completa com Cobra e download de rootfs Alpine.
+- [x] **Phase 1: Isolated Fork (Namespaces)**: Creation of PID, UTS, and Mount namespaces with re-exec.
+- [x] **Phase 2: File Isolation (Chroot)**: Isolation of the system root and mounting of `/proc`.
+- [x] **Phase 3: Resource Control (Cgroups)**: Memory limitation (100MB) and CPU shares.
+- [x] **Phase 4: Basic Networking (Netns)**: Configuration of veth pairs and static IPs.
+- [x] **Phase 5: Professional Interface and Images**: Full CLI with Cobra and Alpine rootfs download.
 
-## Contribuindo
+## Contributing
 
-Veja [CONTRIBUTING.md](CONTRIBUTING.md) para saber como participar do projeto.
+See [CONTRIBUTING.md](CONTRIBUTING.md) to learn how to participate in the project.
 
-## Licença
+## License
 
-Distribuído sob a licença MIT. Veja [LICENSE](LICENSE) para mais informações.
+Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 
-## Autor
+## Author
 
 **Enoque Sousa**
 - [Portfolio](https://enoquesousa.vercel.app)
