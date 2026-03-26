@@ -18,3 +18,8 @@
 runtime
 myruntime
 runtime_linux
+gocontainer
+
+# Container specific directories
+alpine_rootfs/
+cache/
