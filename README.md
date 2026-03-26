@@ -1,45 +1,56 @@
 # Go Container Runtime
 
-Uma implementação minimalista de um **Container Runtime** em Go, utilizando **Linux Namespaces** para isolamento de processos (PID), rede/identidade (UTS) e sistema de arquivos (Mount).
+A minimalist implementation of a **Container Runtime** in Go, utilizing **Linux Namespaces** for process isolation (PID), identity (UTS), and filesystem (Mount).
 
-## 🚀 Como funciona
+## 🚀 How it Works
 
-O programa utiliza a técnica de **re-execução** (`/proc/self/exe`) para aplicar as configurações de isolamento corretamente:
+The program uses the **re-execution** technique (`/proc/self/exe`) to properly apply isolation settings:
 
-1.  **Stage 1 (run):** Prepara os namespaces (`CLONE_NEWUTS`, `CLONE_NEWPID`, `CLONE_NEWNS`) e executa a si mesmo novamente dentro do novo ambiente.
-2.  **Stage 2 (child):** Já dentro dos novos namespaces, define o hostname (`container-runtime`) e monta o sistema de arquivos `/proc` para garantir o isolamento visível de processos.
-3.  **Final Stage:** Substitui o processo atual pelo comando final do usuário via `syscall.Exec`.
+1.  **Stage 1 (run):** Prepares the namespaces (`CLONE_NEWUTS`, `CLONE_NEWPID`, `CLONE_NEWNS`) and re-executes itself within the new environment.
+2.  **Stage 2 (child):** Inside the new namespaces, it sets the hostname (`container-runtime`) and mounts the `/proc` filesystem to ensure visible process isolation.
+3.  **Final Stage:** Replaces the current process with the user's final command via `syscall.Exec`.
 
-## 🛠️ Requisitos
+## 🛠️ Requirements
 
-Este projeto depende diretamente de funcionalidades do **Kernel Linux**.
+This project directly depends on **Linux Kernel** features.
 
-- **Linux:** Funciona nativamente (requer privilégios de `root` para criar namespaces).
-- **Windows:** Utilize o **WSL2** (Windows Subsystem for Linux).
+- **Linux:** Works natively (requires `root` privileges to create namespaces).
+- **Windows:** Use **WSL2** (Windows Subsystem for Linux).
 
-## 💻 Como executar (Linux ou WSL2)
+## 💻 How to Run (Linux or WSL2)
 
-1.  Clone o repositório e acesse a pasta:
-    ```bash
-    git clone <URL_DO_REPOSITORIO>
-    cd gocontainerruntime
-    ```
+### 1. Entering the Linux Environment
+If you are on **Windows**, open your **Ubuntu** terminal (or whichever distro you installed on WSL).
 
-2.  Compile o binário para Linux:
+Linux and Windows share files! To navigate to this project folder within Linux, use the `cd` (Change Directory) command:
+```bash
+# Replace with your actual path. Windows drives are mounted under /mnt/
+cd /mnt/c/your/project/path/gocontainerruntime
+```
+
+### 2. Basic Navigation Commands:
+- `ls`: List files in the current folder.
+- `pwd`: Show the full path of your current location.
+- `cd ..`: Go back one folder.
+
+### 3. Compiling and Running the Container
+Once you are in the correct folder inside the Linux terminal:
+
+1.  **Compile the binary:**
     ```bash
     go build -o myruntime main.go
     ```
 
-3.  Execute o container runtime com privilégios de superusuário:
+2.  **Run with superuser privileges (sudo):**
     ```bash
     sudo ./myruntime run /bin/bash
     ```
 
-### Validando o isolamento:
+### Validating Isolation:
 
-Dentro do novo shell:
-- **Hostname:** Digite `hostname`. Deve retornar `container-runtime`.
-- **Isolamento de Processos:** Digite `ps aux`. Você verá apenas o `/bin/bash` e o `ps`, com o PID 1.
+Inside the new shell:
+- **Hostname:** Type `hostname`. It should return `container-runtime`.
+- **Process Isolation:** Type `ps aux`. You should only see `/bin/bash` and `ps`, with the shell running as PID 1.
 
 ---
-*Este projeto é para fins educacionais de como containers funcionam por baixo do capô.*
+*This project is for educational purposes to demonstrate how containers work under the hood.*
