@@ -9,8 +9,8 @@ import (
 )
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Printf("Usage: %s run <command> [args...]\n", os.Args[0])
+	if len(os.Args) < 3 {
+		fmt.Printf("Usage: %s run <rootfs_path> <command> [args...]\n", os.Args[0])
 		os.Exit(1)
 	}
 
@@ -28,7 +28,7 @@ func main() {
 func run() {
 	fmt.Printf("Running Stage 1 (PID: %d)\n", os.Getpid())
 
-	// Re-execute itself with 'child' as the first argument
+	// Re-execute itself with 'child' as the first argument, passing rootfs and command
 	cmd := exec.Command("/proc/self/exe", append([]string{"child"}, os.Args[2:]...)...)
 
 	// Configure namespaces: PID, UTS (hostname), Mount (filesystem)
@@ -50,21 +50,32 @@ func run() {
 func child() {
 	fmt.Printf("Running Stage 2 (PID: %d in container)\n", os.Getpid())
 
+	rootfs := os.Args[2]
+	userCommand := os.Args[3]
+	userArgs := os.Args[3:]
+
 	// Set a new hostname for the UTS namespace
 	must(syscall.Sethostname([]byte("container-runtime")))
 
-	// Mount /proc to isolate PID namespace visibility
-	// MS_NOEXEC: Do not allow programs to be executed from this filesystem
-	// MS_NOSUID: Do not honor set-user-ID or set-group-ID bits
-	// MS_NODEV: Do not allow access to devices (special files)
-	defaultMountFlags := uintptr(syscall.MS_NOEXEC | syscall.MS_NOSUID | syscall.MS_NODEV)
-	must(syscall.Mount("proc", "/proc", "proc", defaultMountFlags, ""))
+	// 1. Isolate the filesystem: Chroot to the provided rootfs path
+	must(syscall.Chroot(rootfs))
+
+	// 2. Change directory to the new root
+	must(os.Chdir("/"))
+
+	// 3. Mount /proc inside the new root to isolate PID visibility
+	// This must happen after chroot so it is mounted in the container's /proc
+	must(syscall.Mount("proc", "/proc", "proc", 0, ""))
 
 	// Execute the final user command, replacing this process
-	cmdPath, err := exec.LookPath(os.Args[2])
-	must(err)
+	// Since we are inside the chroot, we look for the command relative to the new root
+	cmdPath, err := exec.LookPath(userCommand)
+	if err != nil {
+		fmt.Printf("Error finding command '%s' inside rootfs: %v\n", userCommand, err)
+		os.Exit(1)
+	}
 
-	must(syscall.Exec(cmdPath, os.Args[2:], os.Environ()))
+	must(syscall.Exec(cmdPath, userArgs, os.Environ()))
 }
 
 func must(err error) {
