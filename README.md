@@ -1,56 +1,58 @@
 # Go Container Runtime
 
-A minimalist implementation of a **Container Runtime** in Go, utilizing **Linux Namespaces** for process isolation (PID), identity (UTS), and filesystem (Mount).
+A minimalist implementation of a **Container Runtime** in Go, utilizing **Linux Namespaces** and **Cgroups** for process isolation and resource management.
 
 ## 🚀 How it Works
 
-The program uses the **re-execution** technique (`/proc/self/exe`) to properly apply isolation settings:
+The runtime implements three layers of containerization:
 
-1.  **Stage 1 (run):** Prepares the namespaces (`CLONE_NEWUTS`, `CLONE_NEWPID`, `CLONE_NEWNS`) and re-executes itself within the new environment.
-2.  **Stage 2 (child):** Inside the new namespaces, it sets the hostname (`container-runtime`) and mounts the `/proc` filesystem to ensure visible process isolation.
-3.  **Final Stage:** Replaces the current process with the user's final command via `syscall.Exec`.
+### 1. Isolation (Namespaces)
+- **UTS (`CLONE_NEWUTS`):** Isolates the hostname.
+- **PID (`CLONE_NEWPID`):** Isolates the process ID tree. The container command becomes PID 1.
+- **Mount (`CLONE_NEWNS`):** Isolates mount points. Used with `chroot` to provide a dedicated filesystem.
+- **Network (`CLONE_NEWNET`):** Isolates the network stack. A `veth` pair bridges the host to the container.
+
+### 2. Resource Control (Cgroups V1)
+- **Memory:** Limits memory usage to 100MB (`memory.limit_in_bytes`).
+- **CPU:** Sets CPU shares to 512 (`cpu.shares`), ensuring fair access to CPU cycles.
+- **Cleanup:** Cgroup directories and veth interfaces are automatically deleted upon container exit.
+
+### 3. Networking
+- Creates a virtual ethernet pair (`veth-host` <-> `veth-child`).
+- Host IP: `10.0.0.1`
+- Container IP: `10.0.0.2`
+- Enables communication via a virtual bridge.
 
 ## 🛠️ Requirements
 
-This project directly depends on **Linux Kernel** features.
+- **Linux Kernel** (or WSL2).
+- **Root Privileges** (`sudo`) for namespace and cgroup manipulation.
 
-- **Linux:** Works natively (requires `root` privileges to create namespaces).
-- **Windows:** Use **WSL2** (Windows Subsystem for Linux).
+## 💻 Usage
 
-## 💻 How to Run (Linux or WSL2)
-
-### 1. Entering the Linux Environment
-If you are on **Windows**, open your **Ubuntu** terminal (or whichever distro you installed on WSL).
-
-Linux and Windows share files! To navigate to this project folder within Linux, use the `cd` (Change Directory) command:
+### 1. Compile
 ```bash
-# Replace with your actual path. Windows drives are mounted under /mnt/
-cd /mnt/c/your/project/path/gocontainerruntime
+go build -o gocontainer main.go
 ```
 
-### 2. Basic Navigation Commands:
-- `ls`: List files in the current folder.
-- `pwd`: Show the full path of your current location.
-- `cd ..`: Go back one folder.
+### 2. Pull a Basic Image
+Downloads and extracts an Alpine Linux rootfs to `./cache`.
+```bash
+sudo ./gocontainer pull
+```
 
-### 3. Compiling and Running the Container
-Once you are in the correct folder inside the Linux terminal:
+### 3. Run a Container
+If no rootfs is provided, it uses the cached Alpine image.
+```bash
+# Using cached image
+sudo ./gocontainer run /bin/sh
 
-1.  **Compile the binary:**
-    ```bash
-    go build -o myruntime main.go
-    ```
+# Using a custom rootfs
+sudo ./gocontainer run ./my_rootfs /bin/bash
+```
 
-2.  **Run with superuser privileges (sudo):**
-    ```bash
-    sudo ./myruntime run /bin/bash
-    ```
-
-### Validating Isolation:
-
-Inside the new shell:
-- **Hostname:** Type `hostname`. It should return `container-runtime`.
-- **Process Isolation:** Type `ps aux`. You should only see `/bin/bash` and `ps`, with the shell running as PID 1.
+## 🔐 Security Note
+This is an educational implementation. While it uses real Linux kernel primitives, it does not include advanced security features like **Seccomp**, **AppArmor**, or **User Namespaces** (`CLONE_NEWUSER`), which are essential for production-grade runtimes like `runc`.
 
 ---
-*This project is for educational purposes to demonstrate how containers work under the hood.*
+*Developed for educational purposes to demonstrate the core pillars of Linux containers.*

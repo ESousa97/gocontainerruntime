@@ -2,36 +2,122 @@
 package main
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"syscall"
+
+	"github.com/spf13/cobra"
+)
+
+var (
+	cacheDir = "./cache/alpine_rootfs"
+	alpineURL = "https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/x86_64/alpine-minirootfs-3.19.1-x86_64.tar.gz"
 )
 
 func main() {
-	if len(os.Args) < 3 {
-		fmt.Printf("Usage: %s run <rootfs_path> <command> [args...]\n", os.Args[0])
-		os.Exit(1)
+	var rootCmd = &cobra.Command{Use: "gocontainer"}
+
+	var pullCmd = &cobra.Command{
+		Use:   "pull",
+		Short: "Download a basic Alpine rootfs for the container",
+		Run: func(cmd *cobra.Command, args []string) {
+			pull()
+		},
 	}
 
-	switch os.Args[1] {
-	case "run":
-		run()
-	case "child":
-		child()
-	default:
-		panic("Invalid command")
+	var runCmd = &cobra.Command{
+		Use:   "run [rootfs_path] [command] [args...]",
+		Short: "Run a command inside a new container",
+		Args:  cobra.MinimumNArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			var rootfs, userCommand string
+			var userArgs []string
+
+			// If only 1 arg, use cached image and the arg is the command
+			if len(args) == 1 {
+				if _, err := os.Stat(cacheDir); os.IsNotExist(err) {
+					fmt.Println("No rootfs provided and cache is empty. Running 'pull' first...")
+					pull()
+				}
+				rootfs = cacheDir
+				userCommand = args[0]
+				userArgs = args
+			} else {
+				rootfs = args[0]
+				userCommand = args[1]
+				userArgs = args[1:]
+			}
+
+			run(rootfs, userCommand, userArgs)
+		},
+	}
+
+	// Internal command used by re-exec logic
+	var childCmd = &cobra.Command{
+		Use:    "child",
+		Hidden: true,
+		Run: func(cmd *cobra.Command, args []string) {
+			child(args[0], args[1], args[1:])
+		},
+	}
+
+	rootCmd.AddCommand(pullCmd, runCmd, childCmd)
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
 }
 
-// run is the first stage that prepares the namespaces
-func run() {
+func pull() {
+	fmt.Printf("Downloading Alpine rootfs from %s...\n", alpineURL)
+	
+	if err := os.MkdirAll(cacheDir, 0755); err != nil {
+		must(err)
+	}
+
+	resp, err := http.Get(alpineURL)
+	must(err)
+	defer resp.Body.Close()
+
+	uncompressed, err := gzip.NewReader(resp.Body)
+	must(err)
+
+	tr := tar.NewReader(uncompressed)
+	for {
+		header, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		must(err)
+
+		target := filepath.Join(cacheDir, header.Name)
+		switch header.Typeflag {
+		case tar.TypeDir:
+			os.MkdirAll(target, 0755)
+		case tar.TypeReg:
+			f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
+			must(err)
+			io.Copy(f, tr)
+			f.Close()
+		}
+	}
+	fmt.Println("Download and extraction complete. Cache ready at", cacheDir)
+}
+
+func run(rootfs, userCommand string, userArgs []string) {
 	fmt.Printf("Running Stage 1 (PID: %d)\n", os.Getpid())
 
-	// Re-execute itself with 'child' as the first argument, passing rootfs and command
-	cmd := exec.Command("/proc/self/exe", append([]string{"child"}, os.Args[2:]...)...)
+	// Re-execute itself with 'child' as the first argument
+	args := append([]string{"child", rootfs, userCommand}, userArgs...)
+	cmd := exec.Command("/proc/self/exe", args...)
 
-	// Configure namespaces: PID, UTS (hostname), Mount (filesystem), Network
+	// Configure namespaces: PID, UTS, Mount, Network
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID | syscall.CLONE_NEWNS | syscall.CLONE_NEWNET,
 	}
@@ -40,94 +126,57 @@ func run() {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	// Set up Cgroups
+	// Cgroups setup
 	cg := "/sys/fs/cgroup"
 	memCg := cg + "/memory/gocontainer"
 	cpuCg := cg + "/cpu/gocontainer"
 
-	// Create cgroup directories
 	must(os.MkdirAll(memCg, 0755))
 	must(os.MkdirAll(cpuCg, 0755))
 
-	// Ensure cgroup cleanup
 	defer func() {
 		os.Remove(memCg)
 		os.Remove(cpuCg)
 	}()
 
-	// Set memory limit: 100MB
 	must(os.WriteFile(memCg+"/memory.limit_in_bytes", []byte("104857600"), 0644))
-	// Set CPU shares
 	must(os.WriteFile(cpuCg+"/cpu.shares", []byte("512"), 0644))
 
-	if err := cmd.Start(); err != nil {
-		fmt.Printf("Error starting child process: %v\n", err)
-		os.Exit(1)
-	}
+	must(cmd.Start())
 
 	// Network Setup
 	pid := cmd.Process.Pid
-	fmt.Printf("Setting up network for PID %d\n", pid)
+	exec.Command("ip", "link", "add", "veth-host", "type", "veth", "peer", "name", "veth-child").Run()
+	exec.Command("ip", "link", "set", "veth-child", "netns", fmt.Sprintf("%d", pid)).Run()
+	exec.Command("ip", "addr", "add", "10.0.0.1/24", "dev", "veth-host").Run()
+	exec.Command("ip", "link", "set", "veth-host", "up").Run()
 
-	// 1. Create veth pair
-	must(exec.Command("ip", "link", "add", "veth-host", "type", "veth", "peer", "name", "veth-child").Run())
-	
-	// 2. Move veth-child to the container's network namespace
-	must(exec.Command("ip", "link", "set", "veth-child", "netns", fmt.Sprintf("%d", pid)).Run())
-
-	// 3. Configure the host side
-	must(exec.Command("ip", "addr", "add", "10.0.0.1/24", "dev", "veth-host").Run())
-	must(exec.Command("ip", "link", "set", "veth-host", "up").Run())
-
-	// 4. Configure the child side (inside the namespace)
-	// We use 'nsenter' to run commands inside the child's network namespace
 	nsenter := []string{"nsenter", "-t", fmt.Sprintf("%d", pid), "-n"}
-	must(exec.Command(nsenter[0], append(nsenter[1:], "ip", "addr", "add", "10.0.0.2/24", "dev", "veth-child")...).Run())
-	must(exec.Command(nsenter[0], append(nsenter[1:], "ip", "link", "set", "veth-child", "up")...).Run())
-	must(exec.Command(nsenter[0], append(nsenter[1:], "ip", "link", "set", "lo", "up")...).Run())
+	exec.Command(nsenter[0], append(nsenter[1:], "ip", "addr", "add", "10.0.0.2/24", "dev", "veth-child")...).Run()
+	exec.Command(nsenter[0], append(nsenter[1:], "ip", "link", "set", "veth-child", "up")...).Run()
+	exec.Command(nsenter[0], append(nsenter[1:], "ip", "link", "set", "lo", "up")...).Run()
 
-	// Ensure network cleanup on exit
-	defer func() {
-		exec.Command("ip", "link", "delete", "veth-host").Run()
-	}()
+	defer exec.Command("ip", "link", "delete", "veth-host").Run()
 
-	// Write the child process PID to cgroup.procs
-	pidStr := []byte(fmt.Sprintf("%d", cmd.Process.Pid))
+	// Write PID to Cgroups
+	pidStr := []byte(fmt.Sprintf("%d", pid))
 	must(os.WriteFile(memCg+"/cgroup.procs", pidStr, 0644))
 	must(os.WriteFile(cpuCg+"/cgroup.procs", pidStr, 0644))
 
-	if err := cmd.Wait(); err != nil {
-		fmt.Printf("Error waiting for child process: %v\n", err)
-		os.Exit(1)
-	}
+	must(cmd.Wait())
 }
 
-// child is the second stage running inside the new namespaces
-func child() {
+func child(rootfs, userCommand string, userArgs []string) {
 	fmt.Printf("Running Stage 2 (PID: %d in container)\n", os.Getpid())
 
-	rootfs := os.Args[2]
-	userCommand := os.Args[3]
-	userArgs := os.Args[3:]
-
-	// Set a new hostname for the UTS namespace
-	must(syscall.Sethostname([]byte("container-runtime")))
-
-	// 1. Isolate the filesystem: Chroot to the provided rootfs path
+	must(syscall.Sethostname([]byte("gocontainer")))
 	must(syscall.Chroot(rootfs))
-
-	// 2. Change directory to the new root
 	must(os.Chdir("/"))
-
-	// 3. Mount /proc inside the new root to isolate PID visibility
-	// This must happen after chroot so it is mounted in the container's /proc
 	must(syscall.Mount("proc", "/proc", "proc", 0, ""))
 
-	// Execute the final user command, replacing this process
-	// Since we are inside the chroot, we look for the command relative to the new root
 	cmdPath, err := exec.LookPath(userCommand)
 	if err != nil {
-		fmt.Printf("Error finding command '%s' inside rootfs: %v\n", userCommand, err)
+		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
 	}
 
