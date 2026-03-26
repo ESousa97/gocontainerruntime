@@ -40,8 +40,38 @@ func run() {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	if err := cmd.Run(); err != nil {
-		fmt.Printf("Error: %v\n", err)
+	// Set up Cgroups
+	cg := "/sys/fs/cgroup"
+	memCg := cg + "/memory/gocontainer"
+	cpuCg := cg + "/cpu/gocontainer"
+
+	// Create cgroup directories
+	must(os.MkdirAll(memCg, 0755))
+	must(os.MkdirAll(cpuCg, 0755))
+
+	// Ensure cleanup
+	defer func() {
+		os.Remove(memCg)
+		os.Remove(cpuCg)
+	}()
+
+	// Set memory limit: 100MB
+	must(os.WriteFile(memCg+"/memory.limit_in_bytes", []byte("104857600"), 0644))
+	// Set CPU shares
+	must(os.WriteFile(cpuCg+"/cpu.shares", []byte("512"), 0644))
+
+	if err := cmd.Start(); err != nil {
+		fmt.Printf("Error starting child process: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Write the child process PID to cgroup.procs
+	pidStr := []byte(fmt.Sprintf("%d", cmd.Process.Pid))
+	must(os.WriteFile(memCg+"/cgroup.procs", pidStr, 0644))
+	must(os.WriteFile(cpuCg+"/cgroup.procs", pidStr, 0644))
+
+	if err := cmd.Wait(); err != nil {
+		fmt.Printf("Error waiting for child process: %v\n", err)
 		os.Exit(1)
 	}
 }
