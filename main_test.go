@@ -17,7 +17,7 @@ func TestRunCommand(t *testing.T) {
 
 	// Try to execute the runtime with a simple command inside a container
 	// This ensures the Stages 1 and 2 are talking correctly
-	cmd := exec.Command("./runtime", "run", "echo", "hello")
+	cmd := exec.Command("./gocontainer", "run", "echo", "hello")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Errorf("Failed to run container: %v, output: %s", err, string(output))

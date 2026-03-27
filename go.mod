@@ -1,4 +1,4 @@
-module gocontainerruntime
+module github.com/ESousa97/gocontainerruntime
 
 go 1.25.0
 
