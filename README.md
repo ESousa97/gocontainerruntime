@@ -1,13 +1,19 @@
-# gocontainerruntime
+<div align="center">
+  <h1>gocontainerruntime</h1>
+  <p>A minimal container runtime (study purposes) implemented in Go using Linux namespaces and cgroups.</p>
 
-> A minimal container runtime (study purposes) implemented in Go using Linux namespaces and cgroups
+  <img src="assets/github-go.png" alt="gocontainerruntime Banner" width="600px">
 
-![CI](https://github.com/ESousa97/gocontainerruntime/actions/workflows/ci.yml/badge.svg)
-![Go Report Card](https://goreportcard.com/badge/github.com/ESousa97/gocontainerruntime)
-![Go Reference](https://pkg.go.dev/badge/github.com/ESousa97/gocontainerruntime.svg)
-![License](https://img.shields.io/github/license/ESousa97/gocontainerruntime)
-![Go Version](https://img.shields.io/github/go-mod/go-version/ESousa97/gocontainerruntime)
-![Last Commit](https://img.shields.io/github/last-commit/ESousa97/gocontainerruntime)
+  <br>
+
+[![CI](https://github.com/ESousa97/gocontainerruntime/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/ESousa97/gocontainerruntime/actions/workflows/ci.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/ESousa97/gocontainerruntime?=v9)](https://goreportcard.com/report/github.com/ESousa97/gocontainerruntime?=v9)
+[![Go Reference](https://pkg.go.dev/badge/github.com/ESousa97/gocontainerruntime.svg)](https://pkg.go.dev/github.com/ESousa97/gocontainerruntime)
+[![License](https://img.shields.io/github/license/ESousa97/gocontainerruntime)](https://github.com/ESousa97/gocontainerruntime/blob/master/LICENSE)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/ESousa97/gocontainerruntime)](https://github.com/ESousa97/gocontainerruntime)
+[![Last Commit](https://img.shields.io/github/last-commit/ESousa97/gocontainerruntime)](https://github.com/ESousa97/gocontainerruntime/commits/master)
+
+</div>
 
 ---
 
@@ -27,7 +33,7 @@ sudo ./gocontainer run /bin/sh
 
 | Technology | Role |
 |---|---|
-| Go 1.25.0 | Core language and syscalls |
+| Go 1.25.0 | Core language and logic |
 | Linux Syscalls | Namespaces (CLONE_NEWNS, CLONE_NEWUTS, CLONE_NEWPID, CLONE_NEWNET) |
 | Cgroups v1 | Resource limits (100MB Memory, 512 CPU shares) |
 | Cobra | CLI Framework |
@@ -108,29 +114,43 @@ Detailed documentation for internal functions and packages is available at:
 
 ## Configuration
 
+The CLI accepts flags for database configuration (legacy terminology from reference, but applicable to runtime setup).
+
 | Variable | Description | Type | Default |
 |---|---|---|---|
 | `cacheDir` | Directory for rootfs extraction | String | `./cache/alpine_rootfs` |
 | `alpineURL` | Alpine download URL | String | Alpine 3.19.1 Minirootfs |
 
-## Roadmap (Finished)
+## Roadmap
 
-- [x] **Phase 1: Isolated Fork (Namespaces)**: Creation of PID, UTS, and Mount namespaces with re-exec.
-- [x] **Phase 2: File Isolation (Chroot)**: Isolation of the system root and mounting of `/proc`.
-- [x] **Phase 3: Resource Control (Cgroups)**: Memory limitation (100MB) and CPU shares.
-- [x] **Phase 4: Basic Networking (Netns)**: Configuration of veth pairs and static IPs.
-- [x] **Phase 5: Professional Interface and Images**: Full CLI with Cobra and Alpine rootfs download.
+- [x] Phase 1: Isolated Fork (Namespaces)
+- [x] Phase 2: File Isolation (Chroot)
+- [x] Phase 3: Resource Control (Cgroups)
+- [x] Phase 4: Basic Networking (Netns)
+- [x] Phase 5: Professional Interface and Images
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) to learn how to participate in the project.
+Contributions are welcome! See the full guide at [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
 Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 
+<div align="center">
+
 ## Author
 
 **Enoque Sousa**
-- [Portfolio](https://enoquesousa.vercel.app)
-- [GitHub](https://github.com/ESousa97)
+
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/enoque-sousa-bb89aa168/)
+[![GitHub](https://img.shields.io/badge/GitHub-100000?style=flat&logo=github&logoColor=white)](https://github.com/ESousa97)
+[![Portfolio](https://img.shields.io/badge/Portfolio-FF5722?style=flat&logo=target&logoColor=white)](https://enoquesousa.vercel.app)
+
+**[⬆ Back to top](#gocontainerruntime)**
+
+Made with ❤️ by [Enoque Sousa](https://github.com/ESousa97)
+
+**Project Status:** Archived — Study Project
+
+</div>
