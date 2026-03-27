@@ -7,7 +7,7 @@
   <br>
 
 [![CI](https://github.com/ESousa97/gocontainerruntime/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/ESousa97/gocontainerruntime/actions/workflows/ci.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/ESousa97/gocontainerruntime?=v9)](https://goreportcard.com/report/github.com/ESousa97/gocontainerruntime?=v9)
+[![Go Report Card](https://goreportcard.com/badge/github.com/ESousa97/gocontainerruntime?=v2)](https://goreportcard.com/report/github.com/ESousa97/gocontainerruntime?=v9)
 [![Go Reference](https://pkg.go.dev/badge/github.com/ESousa97/gocontainerruntime.svg)](https://pkg.go.dev/github.com/ESousa97/gocontainerruntime)
 [![License](https://img.shields.io/github/license/ESousa97/gocontainerruntime)](https://github.com/ESousa97/gocontainerruntime/blob/master/LICENSE)
 [![Go Version](https://img.shields.io/github/go-mod/go-version/ESousa97/gocontainerruntime)](https://github.com/ESousa97/gocontainerruntime)
