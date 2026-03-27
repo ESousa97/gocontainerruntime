@@ -31,13 +31,13 @@ sudo ./gocontainer run /bin/sh
 
 ## Technology Stack
 
-| Technology | Role |
-|---|---|
-| Go 1.25.0 | Core language and logic |
+| Technology     | Role                                                               |
+| -------------- | ------------------------------------------------------------------ |
+| Go 1.25.0      | Core language and logic                                            |
 | Linux Syscalls | Namespaces (CLONE_NEWNS, CLONE_NEWUTS, CLONE_NEWPID, CLONE_NEWNET) |
-| Cgroups v1 | Resource limits (100MB Memory, 512 CPU shares) |
-| Cobra | CLI Framework |
-| Alpine Linux | Lightweight rootfs for the container |
+| Cgroups v1     | Resource limits (100MB Memory, 512 CPU shares)                     |
+| Cobra          | CLI Framework                                                      |
+| Alpine Linux   | Lightweight rootfs for the container                               |
 
 ## Prerequisites
 
@@ -67,13 +67,13 @@ make run
 
 ## Makefile Targets
 
-| Target | Description |
-|---|---|
-| `build` | Compiles the `gocontainer` binary |
-| `clean` | Removes binary and cache files |
-| `test` | Executes the unit test suite |
-| `pull` | Downloads and extracts the Alpine Linux minirootfs |
-| `run` | Starts an interactive container with `/bin/sh` (requires sudo) |
+| Target  | Description                                                    |
+| ------- | -------------------------------------------------------------- |
+| `build` | Compiles the `gocontainer` binary                              |
+| `clean` | Removes binary and cache files                                 |
+| `test`  | Executes the unit test suite                                   |
+| `pull`  | Downloads and extracts the Alpine Linux minirootfs             |
+| `run`   | Starts an interactive container with `/bin/sh` (requires sudo) |
 
 ## Architecture
 
@@ -84,17 +84,17 @@ The runtime operates in two main stages to ensure complete isolation:
 ```mermaid
 graph TD
     Start([User: gocontainer run]) --> Parent[Stage 1: Parent Process]
-    
+
     Parent --> NS[Namespaces Isolation]
     NS --> CG[Cgroups Resource Control]
     CG --> Net[Network Setup]
-    
+
     Net --> Child[Stage 2: Child Process]
-    
+
     Child --> Host[Set Hostname]
     Host --> Chroot[Chroot Isolation]
     Chroot --> Mount[Mount /proc]
-    
+
     Mount --> Final[/Exec: User Command/]
 
     style Final fill:#2da44e,stroke:#fff,stroke-width:1px,color:#fff
@@ -116,10 +116,10 @@ Detailed documentation for internal functions and packages is available at:
 
 The CLI accepts flags for database configuration (legacy terminology from reference, but applicable to runtime setup).
 
-| Variable | Description | Type | Default |
-|---|---|---|---|
-| `cacheDir` | Directory for rootfs extraction | String | `./cache/alpine_rootfs` |
-| `alpineURL` | Alpine download URL | String | Alpine 3.19.1 Minirootfs |
+| Variable    | Description                     | Type   | Default                  |
+| ----------- | ------------------------------- | ------ | ------------------------ |
+| `cacheDir`  | Directory for rootfs extraction | String | `./cache/alpine_rootfs`  |
+| `alpineURL` | Alpine download URL             | String | Alpine 3.19.1 Minirootfs |
 
 ## Roadmap
 
@@ -151,6 +151,6 @@ Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 
 Made with ❤️ by [Enoque Sousa](https://github.com/ESousa97)
 
-**Project Status:** Archived — Study Project
+**Project Status:** Active — Study Project
 
 </div>
