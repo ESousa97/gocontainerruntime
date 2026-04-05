@@ -152,6 +152,6 @@ Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 
 Made with ❤️ by [Enoque Sousa](https://github.com/ESousa97)
 
-**Project Status:** Active — Study Project
+**Project Status:** Archived — Study Project
 
 </div>
