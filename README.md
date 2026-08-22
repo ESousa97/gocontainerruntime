@@ -6,13 +6,13 @@
 
   <br>
 
-[![CI](https://github.com/ESousa97/gocontainerruntime/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/ESousa97/gocontainerruntime/actions/workflows/ci.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/ESousa97/gocontainerruntime?=v2)](https://goreportcard.com/report/github.com/ESousa97/gocontainerruntime?=v9)
-[![CodeFactor](https://www.codefactor.io/repository/github/esousa97/gocontainerruntime/badge)](https://www.codefactor.io/repository/github/esousa97/gocontainerruntime)
-[![Go Reference](https://pkg.go.dev/badge/github.com/ESousa97/gocontainerruntime.svg)](https://pkg.go.dev/github.com/ESousa97/gocontainerruntime)
-[![License](https://img.shields.io/github/license/ESousa97/gocontainerruntime)](https://github.com/ESousa97/gocontainerruntime/blob/master/LICENSE)
-[![Go Version](https://img.shields.io/github/go-mod/go-version/ESousa97/gocontainerruntime)](https://github.com/ESousa97/gocontainerruntime)
-[![Last Commit](https://img.shields.io/github/last-commit/ESousa97/gocontainerruntime)](https://github.com/ESousa97/gocontainerruntime/commits/master)
+[![CI](https://github.com/enoquesousa/gocontainerruntime/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/enoquesousa/gocontainerruntime/actions/workflows/ci.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/enoquesousa/gocontainerruntime?=v2)](https://goreportcard.com/report/github.com/enoquesousa/gocontainerruntime?=v9)
+[![CodeFactor](https://www.codefactor.io/repository/github/enoquesousa/gocontainerruntime/badge)](https://www.codefactor.io/repository/github/enoquesousa/gocontainerruntime)
+[![Go Reference](https://pkg.go.dev/badge/github.com/enoquesousa/gocontainerruntime.svg)](https://pkg.go.dev/github.com/enoquesousa/gocontainerruntime)
+[![License](https://img.shields.io/github/license/enoquesousa/gocontainerruntime)](https://github.com/enoquesousa/gocontainerruntime/blob/master/LICENSE)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/enoquesousa/gocontainerruntime)](https://github.com/enoquesousa/gocontainerruntime)
+[![Last Commit](https://img.shields.io/github/last-commit/enoquesousa/gocontainerruntime)](https://github.com/enoquesousa/gocontainerruntime/commits/master)
 
 </div>
 
@@ -51,13 +51,13 @@ sudo ./gocontainer run /bin/sh
 ### As a binary
 
 ```bash
-go install github.com/ESousa97/gocontainerruntime@latest
+go install github.com/enoquesousa/gocontainerruntime@latest
 ```
 
 ### From source
 
 ```bash
-git clone https://github.com/ESousa97/gocontainerruntime.git
+git clone https://github.com/enoquesousa/gocontainerruntime.git
 cd gocontainerruntime
 make build
 # Optional: Pull default rootfs
@@ -111,7 +111,7 @@ See more details in [docs/architecture.md](docs/architecture.md).
 ## API Reference
 
 Detailed documentation for internal functions and packages is available at:
-[pkg.go.dev/github.com/ESousa97/gocontainerruntime](https://pkg.go.dev/github.com/ESousa97/gocontainerruntime)
+[pkg.go.dev/github.com/enoquesousa/gocontainerruntime](https://pkg.go.dev/github.com/enoquesousa/gocontainerruntime)
 
 ## Configuration
 
@@ -145,12 +145,12 @@ Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 **Enoque Sousa**
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=flat&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/enoque-sousa-bb89aa168/)
-[![GitHub](https://img.shields.io/badge/GitHub-100000?style=flat&logo=github&logoColor=white)](https://github.com/ESousa97)
+[![GitHub](https://img.shields.io/badge/GitHub-100000?style=flat&logo=github&logoColor=white)](https://github.com/enoquesousa)
 [![Portfolio](https://img.shields.io/badge/Portfolio-FF5722?style=flat&logo=target&logoColor=white)](https://enoquesousa.vercel.app)
 
 **[⬆ Back to top](#gocontainerruntime)**
 
-Made with ❤️ by [Enoque Sousa](https://github.com/ESousa97)
+Made with ❤️ by [Enoque Sousa](https://github.com/enoquesousa)
 
 **Project Status:** Archived — Study Project
 
